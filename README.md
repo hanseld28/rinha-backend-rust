@@ -1,0 +1,1 @@
+## Rinha Backend - Rust Lang Version
