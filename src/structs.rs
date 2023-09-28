@@ -19,7 +19,7 @@ pub struct NovaPessoaDTO {
 	pub apelido: String,
 	pub nome: String,
 	pub nascimento: String,
-	pub stack: Vec<String>,
+	pub stack: Option<Vec<String>>,
 }
 
 #[derive(Serialize)]
@@ -28,11 +28,11 @@ pub struct PessoaDTO {
   pub apelido: String,
 	pub nome: String,
   pub nascimento: String,
-  pub stack: Vec<String>,
+  pub stack: Option<Vec<String>>
 }
 
 impl PessoaDTO {
-	fn new(id: String, apelido: String, nome: String, nascimento: String, stack: Vec<String>) -> PessoaDTO {
+	fn new(id: String, apelido: String, nome: String, nascimento: String, stack: Option<Vec<String>>) -> PessoaDTO {
 		PessoaDTO {
 			id,
 			apelido,
@@ -43,14 +43,22 @@ impl PessoaDTO {
 	}
 
 	pub fn from(p: Pessoa) -> PessoaDTO {
+		let stack = if p.stack.is_empty() {
+			None
+		}	else {
+			Some(
+				p.stack.split(";")
+					.map(|s| s.to_owned())
+					.collect::<Vec<String>>()
+			)
+		};
+
 		PessoaDTO::new(
 			p.id.to_string(),
 			p.apelido.to_string(),
 			p.nome.to_string(),
 			p.nascimento.to_string(),
-			p.stack.split(";")
-				.map(|s| s.to_owned())
-				.collect()
+			stack,
 		)
 	}
 }
