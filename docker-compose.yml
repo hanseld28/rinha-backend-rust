@@ -1,34 +1,38 @@
 version: '3.8'
 services:
-  api1: # API - Instância 01
-    image: rinha-api:latest
-    environment: 
-      DATABASE_URL: postgresql://postgres:2309@db:5432/root?schema=public
-    depends_on:
-      - db
-    expose:
-      - "3000"
-    deploy:
-      resources:
-        limits:
-          cpus: '0.15'
-          memory: '0.5GB'
-          
-  api2: # API - Instância 02
-    image: rinha-api:latest
+  api1:
+    image: hanseld28/rinha-backend-rust-api:1.0
     environment:
+      HOST: 0.0.0.0
+      PORT: 80
       DATABASE_URL: postgresql://postgres:2309@db:5432/root?schema=public
     depends_on:
       - db
     expose:
-      - "3000"
+      - "80"
     deploy:
       resources:
         limits:
           cpus: '0.15'
           memory: '0.5GB'
 
-  nginx: # Load Balancer
+  api2:
+    image: hanseld28/rinha-backend-rust-api:1.0
+    environment:
+      HOST: 0.0.0.0
+      PORT: 80
+      DATABASE_URL: postgresql://postgres:2309@db:5432/root?schema=public
+    depends_on:
+      - db
+    expose:
+      - "80"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.15'
+          memory: '0.5GB'
+
+  nginx:
     image: nginx:latest
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
@@ -43,7 +47,7 @@ services:
           cpus: '0.15'
           memory: '0.3GB'
 
-  db: # Banco de dados
+  db:
     image: postgres
     ports:
       - "5432:5432"

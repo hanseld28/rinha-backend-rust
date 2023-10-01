@@ -16,10 +16,10 @@ pub struct Pessoa {
 
 #[derive(Deserialize)]
 pub struct NovaPessoaDTO {
-	pub apelido: String,
-	pub nome: String,
-	pub nascimento: String,
-	pub stack: Option<Vec<String>>,
+	pub apelido: Option<String>,
+	pub nome: Option<String>,
+	pub nascimento: Option<String>,
+	pub stack: Option<Vec<Option<String>>>,
 }
 
 #[derive(Serialize)]
