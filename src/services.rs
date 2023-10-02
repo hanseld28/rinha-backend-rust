@@ -16,7 +16,7 @@ pub async fn create_pessoa(state: Data<AppState>, body: Json<NovaPessoaDTO>) -> 
 		None => String::from("null")
 	};
 
-	if apelido.eq("null") || apelido.chars().count().gt(&32) {
+	if apelido.eq("null") || apelido.chars().count() > 32 {
 		return HttpResponse::UnprocessableEntity().finish();
 	}
 
@@ -25,7 +25,7 @@ pub async fn create_pessoa(state: Data<AppState>, body: Json<NovaPessoaDTO>) -> 
 		None => String::from("null")
 	};
 
-	if nome.eq("null") || nome.chars().count().gt(&100) {
+	if nome.eq("null") || nome.chars().count() > 100 {
 		return HttpResponse::UnprocessableEntity().finish();
 	}
 
@@ -41,12 +41,12 @@ pub async fn create_pessoa(state: Data<AppState>, body: Json<NovaPessoaDTO>) -> 
 	let nascimento_date_parts_iter = nascimento.split("-").map(str::to_string);
 	let nascimento_date_parts = nascimento_date_parts_iter.clone().collect::<Vec<String>>();
 
-	if nascimento_date_parts_iter.clone().count().ne(&3)
-		|| nascimento_date_parts[0].chars().count().ne(&4)
-		|| nascimento_date_parts[1].chars().count().ne(&2)
-		|| nascimento_date_parts[1].chars().count().gt(&12)
-		|| nascimento_date_parts[2].chars().count().ne(&2)
-		|| nascimento_date_parts[2].chars().count().gt(&31) {
+	if nascimento_date_parts_iter.clone().count() != 3
+		|| nascimento_date_parts[0].chars().count() != 4
+		|| nascimento_date_parts[1].chars().count() !=2
+		|| nascimento_date_parts[1].chars().count() > 12
+		|| nascimento_date_parts[2].chars().count() != 2
+		|| nascimento_date_parts[2].chars().count() > 31 {
 		return HttpResponse::BadRequest().finish();
 	}
 
@@ -71,7 +71,7 @@ pub async fn create_pessoa(state: Data<AppState>, body: Json<NovaPessoaDTO>) -> 
 		}
 	};
 
-	if stack.iter().any(|s| s.chars().count().gt(&32)) {
+	if stack.iter().any(|s| s.chars().count() > 32) {
 		return HttpResponse::UnprocessableEntity().finish();
 	}
 
@@ -92,7 +92,7 @@ pub async fn create_pessoa(state: Data<AppState>, body: Json<NovaPessoaDTO>) -> 
 			// .insert_header(("Content-Type", "application/json"))
 			.insert_header(("Location", format!("/pessoas/{}", generated_id)))
 			.finish(),
-		Err(e) => HttpResponse::InternalServerError().json(e.to_string()),
+		Err(_) => HttpResponse::BadRequest().finish(),
 	}
 }
 
