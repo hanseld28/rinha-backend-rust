@@ -1,3 +1,4 @@
+use rayon::prelude::*;
 use actix_web::{
   get, post,
   web::{Data, Json, Path, Query},
@@ -55,7 +56,7 @@ pub async fn create_pessoa(state: Data<AppState>, body: Json<NovaPessoaDTO>) -> 
 	}
 
 	let has_any_null_in_stack = match body.stack.clone() {
-		Some(v) => v.iter().any(|s| s.is_none()),
+		Some(v) => v.par_iter().any(|s| s.is_none()),
 		None => false
 	};
 
@@ -64,7 +65,7 @@ pub async fn create_pessoa(state: Data<AppState>, body: Json<NovaPessoaDTO>) -> 
 	}
 
 	let stack = match body.stack.clone() {
-		Some(v) => v.iter().map(|s| s.clone().unwrap()).collect::<Vec<String>>(),
+		Some(v) => v.par_iter().map(|s| s.clone().unwrap()).collect::<Vec<String>>(),
 		None => {
 			let empty_vec: Vec<String> = vec![];
 			empty_vec
@@ -89,7 +90,6 @@ pub async fn create_pessoa(state: Data<AppState>, body: Json<NovaPessoaDTO>) -> 
 		.await
 	{
 		Ok(_) => HttpResponse::Created()
-			// .insert_header(("Content-Type", "application/json"))
 			.insert_header(("Location", format!("/pessoas/{}", generated_id)))
 			.finish(),
 		Err(_) => HttpResponse::BadRequest().finish(),
@@ -110,7 +110,7 @@ pub async fn get_pessoas(state: Data<AppState>, query: Query<Params>) -> impl Re
 				.await
 			{
 				Ok(pessoas) => HttpResponse::Ok().json(
-					pessoas.iter()
+					pessoas.par_iter()
 						.map(|pessoa| PessoaDTO::from(pessoa.clone()))
 						.collect::<Vec<PessoaDTO>>()
 				),
@@ -125,7 +125,7 @@ pub async fn get_pessoas(state: Data<AppState>, query: Query<Params>) -> impl Re
 			.await
 		{
 			Ok(pessoas) => HttpResponse::Ok().json(
-				pessoas.iter()
+				pessoas.par_iter()
 					.map(|pessoa| PessoaDTO::from(pessoa.clone()))
 					.collect::<Vec<PessoaDTO>>()
 			),

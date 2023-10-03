@@ -1,0 +1,3 @@
+FROM postgres
+
+COPY postgresql.conf /docker-entrypoint-initdb.d/postgresql.conf

@@ -22,7 +22,6 @@ async fn main() -> std::io::Result<()> {
 		.expect("PORT must be set");
 
 	let database_pool = PgPoolOptions::new()
-		.max_connections(1024)
 		.connect(&database_url)
 		.await
 		.expect("Error building a connection pool");
@@ -48,7 +47,12 @@ async fn main() -> std::io::Result<()> {
 		.await
 		.err();
 
-		sqlx::query("CREATE EXTENSION PG_TRGM;")
+		sqlx::query("CREATE EXTENSION IF NOT EXISTS PG_TRGM;")
+			.execute(&database_pool)
+			.await
+			.err();
+
+		sqlx::query("CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_pessoa_id ON pessoa USING GIST (id GIST_TRGM_OPS(SIGLEN=64));")
 			.execute(&database_pool)
 			.await
 			.err();

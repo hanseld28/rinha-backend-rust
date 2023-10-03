@@ -12,6 +12,7 @@ serde_json = "1.0.107"
 actix = "0.13.1"
 actix-web = "4.4.0"
 uuid = { version = "1.4.1", features = ["v4"] }
+rayon = "1.8.0"
 chrono = "0.4.31"
 sqlx = { version = "0.7.2", features = ["runtime-async-std-native-tls", "postgres"] }
 dotenv = "0.15.0"

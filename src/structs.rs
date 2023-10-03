@@ -1,3 +1,4 @@
+use rayon::{str::ParallelString, prelude::ParallelIterator};
 use sqlx::{FromRow, postgres::PgPool};
 use serde::{Serialize, Deserialize};
 
@@ -47,8 +48,8 @@ impl PessoaDTO {
 			None
 		}	else {
 			Some(
-				p.stack.split(";")
-					.map(|s| s.to_owned())
+				p.stack.par_split(';')
+					.filter_map(|s| Some(s.to_owned()))
 					.collect::<Vec<String>>()
 			)
 		};

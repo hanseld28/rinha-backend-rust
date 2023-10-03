@@ -33,7 +33,7 @@ services:
           memory: '0.5GB'
 
   nginx:
-    image: hanseld28/blazing-nginx:1.0.0
+    image: hanseld28/rinha-nginx:1.0.0
     depends_on:
       - api1
       - api2
@@ -46,13 +46,14 @@ services:
           memory: '0.3GB'
 
   db:
-    image: postgres
+    image: hanseld28/rinha-postgres:1.0.0
     ports:
       - "5432:5432"
     environment:
       POSTGRES_USER: "postgres"
       POSTGRES_PASSWORD: "2309"
       POSTGRES_DB: "root"
+    command: postgres -c config_file=/docker-entrypoint-initdb.d/postgresql.conf
     deploy:
       resources:
         limits:
