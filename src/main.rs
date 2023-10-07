@@ -1,9 +1,10 @@
 use actix_web::{web::Data, App, HttpServer};
 use dotenv::dotenv;
 use sqlx::postgres::PgPoolOptions;
+use std::sync::Arc;
 
 mod structs;
-use structs::AppState;
+use structs::{AppState, AppQueue};
 
 mod services;
 use services::{create_pessoa, get_pessoas, get_pessoa_by_id, get_contagem_pessoas};
@@ -57,9 +58,12 @@ async fn main() -> std::io::Result<()> {
 			.await
 			.err();
 
+	let queue = Arc::new(AppQueue::new());
+
 	HttpServer::new(move || {
 		App::new()
 			.app_data(Data::new(AppState { db: database_pool.clone() }))
+			.app_data(queue.clone())
 			.service(create_pessoa)
 			.service(get_pessoas)
 			.service(get_pessoa_by_id)
