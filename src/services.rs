@@ -8,7 +8,7 @@ use sqlx::{self, Row};
 use uuid::Uuid;
 use chrono::NaiveDate;
 
-use crate::structs::{Pessoa, AppState, NovaPessoaDTO, PessoaDTO, Params};
+use crate::structs::{Pessoa, AppState, NovaPessoaDTO, PessoaDTO, Params, EMPTY_ARRAY_FLAG};
 
 #[post("/pessoas")]
 pub async fn create_pessoa(state: Data<AppState>, body: Json<NovaPessoaDTO>) -> impl Responder {
@@ -64,17 +64,30 @@ pub async fn create_pessoa(state: Data<AppState>, body: Json<NovaPessoaDTO>) -> 
 		return HttpResponse::UnprocessableEntity().finish();
 	}
 
-	let stack = match body.stack.clone() {
-		Some(v) => v.par_iter().map(|s| s.clone().unwrap()).collect::<Vec<String>>(),
-		None => {
-			let empty_vec: Vec<String> = vec![];
-			empty_vec
-		}
+	let exceeded_max_length_by_item_in_stack = match body.stack.clone() {
+		Some(v) => v.iter().any(|op| {
+			match op {
+				Some(s) => s.chars().count() > 32,
+				None => false
+			}
+		}),
+		None => false
 	};
 
-	if stack.iter().any(|s| s.chars().count() > 32) {
+	if exceeded_max_length_by_item_in_stack {
 		return HttpResponse::UnprocessableEntity().finish();
 	}
+
+	let stack = match body.stack.clone() {
+		Some(v) => v.par_iter().map(|s| s.clone().unwrap()).collect::<Vec<String>>(),
+		None => vec![String::from("")],
+	};
+
+	let verified_stack = if stack.is_empty() {
+		EMPTY_ARRAY_FLAG.to_string()
+	} else {
+		stack.join(";").to_string()
+	};
 
 	let generated_id: String = Uuid::new_v4().to_string();
 
@@ -85,7 +98,7 @@ pub async fn create_pessoa(state: Data<AppState>, body: Json<NovaPessoaDTO>) -> 
 		.bind(apelido.to_string())
 		.bind(nome.to_string())
 		.bind(nascimento.to_string())
-		.bind(stack.join(";").to_string())
+		.bind(verified_stack)
 		.fetch_optional(&state.db)
 		.await
 	{

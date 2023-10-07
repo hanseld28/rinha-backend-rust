@@ -6,6 +6,8 @@ pub struct AppState {
   pub db: PgPool
 }
 
+pub const EMPTY_ARRAY_FLAG: &str = "@@EMPTY_ARRAY";
+
 #[derive(Clone, Serialize, FromRow)]
 pub struct Pessoa {
   pub id: String,
@@ -46,7 +48,9 @@ impl PessoaDTO {
 	pub fn from(p: Pessoa) -> PessoaDTO {
 		let stack = if p.stack.is_empty() {
 			None
-		}	else {
+		} else if p.stack.eq(EMPTY_ARRAY_FLAG) {
+			Some(vec![])
+		} else {
 			Some(
 				p.stack.par_split(';')
 					.filter_map(|s| Some(s.to_owned()))

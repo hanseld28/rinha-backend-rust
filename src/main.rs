@@ -39,7 +39,7 @@ async fn main() -> std::io::Result<()> {
 			nascimento CHAR(10),
 			stack VARCHAR(34000),
 			searchable_text TEXT GENERATED ALWAYS AS (
-					LOWER(apelido || nome || stack)
+					LOWER(apelido || '|' || nome || '|' || stack)
 			) STORED
 		);"
 	)
@@ -48,11 +48,6 @@ async fn main() -> std::io::Result<()> {
 		.err();
 
 		sqlx::query("CREATE EXTENSION IF NOT EXISTS PG_TRGM;")
-			.execute(&database_pool)
-			.await
-			.err();
-
-		sqlx::query("CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_pessoa_id ON pessoa USING GIST (id GIST_TRGM_OPS(SIGLEN=64));")
 			.execute(&database_pool)
 			.await
 			.err();
