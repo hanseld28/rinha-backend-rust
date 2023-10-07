@@ -6,7 +6,7 @@ pub struct AppState {
   pub db: PgPool
 }
 
-pub const EMPTY_ARRAY_FLAG: &str = "@@EMPTY_ARRAY";
+pub const EMPTY_ARRAY_FLAG: &str = "@@[]";
 
 #[derive(Clone, Serialize, FromRow)]
 pub struct Pessoa {
