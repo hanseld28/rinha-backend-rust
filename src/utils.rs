@@ -15,7 +15,7 @@ pub async fn execute_batch_inserts(state: AppState, queue: Arc<Queue<Pessoa>>) {
 			let mut items: Vec<Pessoa> = vec![];
 
 			for _i in 0..500 {
-				if queue.len() == 0 {
+				if queue.is_empty() {
 					break;
 				}
 

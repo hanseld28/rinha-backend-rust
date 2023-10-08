@@ -1,11 +1,12 @@
 version: '3.8'
 services:
   api1:
-    image: hanseld28/rinha-backend-rust-api:1.0.2
+    image: hanseld28/rinha-backend-rust-api:1.0.3
     environment:
-      HOST: 0.0.0.0
-      PORT: 80
+      API_HOST: 0.0.0.0
+      API_PORT: 80
       DATABASE_URL: postgresql://postgres:2309@db:5432/root?schema=public
+      REDIS_URL: redis://redis:6379/
     depends_on:
       - db
     expose:
@@ -17,11 +18,12 @@ services:
           memory: '0.6GB'
 
   api2:
-    image: hanseld28/rinha-backend-rust-api:1.0.2
+    image: hanseld28/rinha-backend-rust-api:1.0.3
     environment:
-      HOST: 0.0.0.0
-      PORT: 80
+      API_HOST: 0.0.0.0
+      API_PORT: 80
       DATABASE_URL: postgresql://postgres:2309@db:5432/root?schema=public
+      REDIS_URL: redis://redis:6379/
     depends_on:
       - db
     expose:
@@ -57,5 +59,13 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '1.05'
-          memory: '1.5GB'
+          cpus: '1.0'
+          memory: '1.2GB'
+  redis:
+    image: redis:latest
+    command: redis-server --save "" --appendonly no --maxclients 10000
+    deploy:
+      resources:
+        limits:
+          cpus: '0.05'
+          memory: '0.3GB'

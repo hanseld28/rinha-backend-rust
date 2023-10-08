@@ -1,4 +1,5 @@
 use actix_web::{web::Data, App, HttpServer};
+use deadpool_redis::Runtime;
 use dotenv::dotenv;
 use sqlx::postgres::PgPoolOptions;
 use std::sync::Arc;
@@ -16,14 +17,17 @@ use services::{create_pessoa, get_pessoas, get_pessoa_by_id, get_contagem_pessoa
 async fn main() -> std::io::Result<()> {
 	dotenv().ok();
 
+	let api_host = std::env::var("API_HOST")
+		.expect("API_HOST must be set");
+
+	let api_port = std::env::var("API_PORT")
+		.expect("API_PORT must be set");
+
 	let database_url = std::env::var("DATABASE_URL")
 		.expect("DATABASE_URL must be set");
 
-	let host = std::env::var("HOST")
-		.expect("HOST_URL must be set");
-
-	let port = std::env::var("PORT")
-		.expect("PORT must be set");
+	let redis_url = std::env::var("REDIS_URL")
+	.expect("REDIS_URL must be set");
 
 	let database_pool = PgPoolOptions::new()
 		.connect(&database_url)
@@ -51,15 +55,18 @@ async fn main() -> std::io::Result<()> {
 		.await
 		.err();
 
-		sqlx::query("CREATE EXTENSION IF NOT EXISTS PG_TRGM;")
-			.execute(&database_pool)
-			.await
-			.err();
+	sqlx::query("CREATE EXTENSION IF NOT EXISTS PG_TRGM;")
+		.execute(&database_pool)
+		.await
+		.err();
 
-		sqlx::query("CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_pessoa_searchable_text ON pessoa USING GIST (searchable_text GIST_TRGM_OPS(SIGLEN=64));")
-			.execute(&database_pool)
-			.await
-			.err();
+	sqlx::query("CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_pessoa_searchable_text ON pessoa USING GIST (searchable_text GIST_TRGM_OPS(SIGLEN=64));")
+		.execute(&database_pool)
+		.await
+		.err();
+
+	let redis_client = deadpool_redis::Config::from_url(redis_url);
+	let redis_pool = redis_client.create_pool(Some(Runtime::Tokio1)).unwrap();
 
 	let app_state = AppState {
 		db: database_pool.clone()
@@ -76,13 +83,14 @@ async fn main() -> std::io::Result<()> {
 	HttpServer::new(move || {
 		App::new()
 			.app_data(Data::new(AppState { db: database_pool.clone() }))
+			.app_data(Data::new(redis_pool.clone()))
 			.app_data(Data::new(queue.clone()))
 			.service(create_pessoa)
 			.service(get_pessoas)
 			.service(get_pessoa_by_id)
 			.service(get_contagem_pessoas)
 	})
-		.bind((host, port.parse().unwrap()))?
+		.bind((api_host, api_port.parse().unwrap()))?
 		.run()
 		.await
 }

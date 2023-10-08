@@ -6,6 +6,7 @@ use actix_web::{
   web::{Data, Json, Path, Query},
 	HttpResponse, Responder
 };
+use redis::AsyncCommands;
 use sqlx::{self, Row};
 use uuid::Uuid;
 use chrono::NaiveDate;
@@ -13,7 +14,11 @@ use chrono::NaiveDate;
 use crate::structs::{Pessoa, AppState, NovaPessoaDTO, PessoaDTO, Params, EMPTY_ARRAY_FLAG, AppQueue};
 
 #[post("/pessoas")]
-pub async fn create_pessoa(body: Json<NovaPessoaDTO>, _state: Data<AppState>, queue: Data<Arc<AppQueue>>) -> impl Responder {
+pub async fn create_pessoa(
+	body: Json<NovaPessoaDTO>,
+	redis_pool: Data<deadpool_redis::Pool>,
+	queue: Data<Arc<AppQueue>>
+) -> impl Responder {
 	let apelido = match body.apelido.clone() {
 		Some(field) => field,
 		None => String::from("null")
@@ -92,14 +97,36 @@ pub async fn create_pessoa(body: Json<NovaPessoaDTO>, _state: Data<AppState>, qu
 	};
 
 	let generated_id: String = Uuid::new_v4().to_string();
-
-	queue.push(Pessoa {
+	let new_pessoa = Pessoa {
 		id: generated_id.clone(),
 		apelido: apelido.clone(),
 		nome: nome.clone(),
 		nascimento: nascimento.clone(),
 		stack: verified_stack.clone()
-	});
+	};
+
+	let mut redis = redis_pool.get_ref().get().await.unwrap();
+
+	let existing_persoa: Option<String> = redis.get(
+		generated_id.clone()
+	).await.unwrap_or(None);
+
+	if existing_persoa.is_some() {
+		return HttpResponse::UnprocessableEntity().finish();
+	};
+
+	queue.push(new_pessoa.clone());
+
+	let pessoa_dto_json = serde_json::to_string(
+		&PessoaDTO::from(new_pessoa.clone())
+	).unwrap();
+
+	redis.set::<_, _, ()>(
+		&generated_id,
+		&pessoa_dto_json
+	)
+		.await
+		.unwrap();
 
 	HttpResponse::Created()
 		.insert_header(("Location", format!("/pessoas/{}", generated_id)))
@@ -144,8 +171,17 @@ pub async fn get_pessoas(state: Data<AppState>, query: Query<Params>) -> impl Re
 }
 
 #[get("/pessoas/{id}")]
-async fn get_pessoa_by_id(state: Data<AppState>, path: Path<String>) -> impl Responder {
+async fn get_pessoa_by_id(path: Path<String>, state: Data<AppState>, redis_pool: Data<deadpool_redis::Pool>) -> impl Responder {
     let id: String = path.into_inner();
+
+		let mut redis = redis_pool.get_ref().get().await.unwrap();
+		let cached_json_data: Option<String> = redis.get(id.clone()).await.unwrap_or(None);
+
+		if cached_json_data.is_some() {
+				return HttpResponse::Ok()
+					.content_type("application/json")
+					.body(cached_json_data.unwrap());
+		}
 
     match sqlx::query_as::<_, Pessoa>(
     	"SELECT id, apelido, nome, nascimento, stack FROM pessoa WHERE id = $1"
