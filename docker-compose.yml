@@ -35,7 +35,7 @@ services:
           memory: '0.6GB'
 
   nginx:
-    image: hanseld28/rinha-nginx:1.0.2
+    image: hanseld28/rinha-nginx:1.0.4
     depends_on:
       - api1
       - api2
