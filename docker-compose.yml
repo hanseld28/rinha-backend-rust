@@ -1,7 +1,7 @@
 version: '3.8'
 services:
   api1:
-    image: hanseld28/rinha-backend-rust-api:1.0.3
+    image: hanseld28/rinha-backend-rust-api:1.0.6
     environment:
       API_HOST: 0.0.0.0
       API_PORT: 80
@@ -18,7 +18,7 @@ services:
           memory: '0.6GB'
 
   api2:
-    image: hanseld28/rinha-backend-rust-api:1.0.3
+    image: hanseld28/rinha-backend-rust-api:1.0.6
     environment:
       API_HOST: 0.0.0.0
       API_PORT: 80
@@ -35,7 +35,7 @@ services:
           memory: '0.6GB'
 
   nginx:
-    image: hanseld28/rinha-nginx:1.0.4
+    image: hanseld28/rinha-nginx:1.0.6
     depends_on:
       - api1
       - api2
@@ -48,7 +48,7 @@ services:
           memory: '0.3GB'
 
   db:
-    image: hanseld28/rinha-postgres:1.0.2
+    image: hanseld28/rinha-postgres:1.0.3
     ports:
       - "5432:5432"
     environment:

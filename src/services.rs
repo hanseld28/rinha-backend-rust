@@ -72,7 +72,7 @@ pub async fn create_pessoa(
 	}
 
 	let exceeded_max_length_by_item_in_stack = match body.stack.clone() {
-		Some(v) => v.iter().any(|op| {
+		Some(v) => v.par_iter().any(|op| {
 			match op {
 				Some(s) => s.chars().count() > 32,
 				None => false
@@ -121,7 +121,7 @@ pub async fn create_pessoa(
 		&PessoaDTO::from(new_pessoa.clone())
 	).unwrap();
 
-	redis.set::<_, _, ()>(
+	redis.set::<&String, &String, ()>(
 		&generated_id,
 		&pessoa_dto_json
 	)
@@ -135,8 +135,6 @@ pub async fn create_pessoa(
 
 #[get("/pessoas")]
 pub async fn get_pessoas(state: Data<AppState>, query: Query<Params>) -> impl Responder {
-	let empty_vec: Vec<Pessoa> = vec![];
-
 	if !query.t.is_empty() {
 		let term = format!("%{}%", query.t.to_lowercase().to_string());
 		return match sqlx::query_as::<_, Pessoa>(
@@ -151,7 +149,7 @@ pub async fn get_pessoas(state: Data<AppState>, query: Query<Params>) -> impl Re
 						.map(|pessoa| PessoaDTO::from(pessoa.clone()))
 						.collect::<Vec<PessoaDTO>>()
 				),
-				Err(_) => HttpResponse::Ok().json(empty_vec),
+				Err(_) => HttpResponse::Ok().json(Vec::<Pessoa>::new()),
 			}
 	}
 
@@ -166,7 +164,7 @@ pub async fn get_pessoas(state: Data<AppState>, query: Query<Params>) -> impl Re
 					.map(|pessoa| PessoaDTO::from(pessoa.clone()))
 					.collect::<Vec<PessoaDTO>>()
 			),
-			Err(_) => HttpResponse::Ok().json(empty_vec),
+			Err(_) => HttpResponse::Ok().json(Vec::<Pessoa>::new()),
 		}
 }
 
@@ -202,7 +200,7 @@ async fn get_contagem_pessoas(state: Data<AppState>) -> impl Responder {
 		.await
 	{
 		Ok(row) => HttpResponse::Ok().json(
-			row.get::<&str, &str>("count").parse::<i32>().unwrap()
+			row.get::<&str, &str>("count").parse::<u32>().unwrap()
 		),
 		Err(_) => HttpResponse::Ok().json(0),
 	}
