@@ -6,6 +6,9 @@ use std::sync::Arc;
 mod structs;
 use structs::{AppState, AppQueue};
 
+mod utils;
+use utils::start_batch_inserts_queue;
+
 mod services;
 use services::{create_pessoa, get_pessoas, get_pessoa_by_id, get_contagem_pessoas};
 
@@ -58,12 +61,22 @@ async fn main() -> std::io::Result<()> {
 			.await
 			.err();
 
+	let app_state = AppState {
+		db: database_pool.clone()
+	};
+	let app_state_clone = app_state.clone();
+
 	let queue = Arc::new(AppQueue::new());
+	let queue_clone = queue.clone();
+
+	tokio::spawn(async move {
+		start_batch_inserts_queue(app_state_clone, queue_clone).await;
+	});
 
 	HttpServer::new(move || {
 		App::new()
 			.app_data(Data::new(AppState { db: database_pool.clone() }))
-			.app_data(queue.clone())
+			.app_data(Data::new(queue.clone()))
 			.service(create_pessoa)
 			.service(get_pessoas)
 			.service(get_pessoa_by_id)

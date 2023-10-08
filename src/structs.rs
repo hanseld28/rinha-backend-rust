@@ -1,11 +1,11 @@
-use actix_web::web;
 use rayon::{str::ParallelString, prelude::ParallelIterator};
 use sqlx::{FromRow, postgres::PgPool};
 use serde::{Serialize, Deserialize};
 
-pub type QueueEvent = (String, web::Json<PessoaDTO>);
-pub type AppQueue = deadqueue::unlimited::Queue<QueueEvent>;
+pub type QueueTaskEvent = Pessoa;
+pub type AppQueue = deadqueue::unlimited::Queue<QueueTaskEvent>;
 
+#[derive(Clone)]
 pub struct AppState {
   pub db: PgPool
 }

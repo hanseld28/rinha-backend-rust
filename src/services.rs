@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use rayon::prelude::*;
 use actix_web::{
   get, post,
@@ -8,10 +10,10 @@ use sqlx::{self, Row};
 use uuid::Uuid;
 use chrono::NaiveDate;
 
-use crate::structs::{Pessoa, AppState, NovaPessoaDTO, PessoaDTO, Params, EMPTY_ARRAY_FLAG};
+use crate::structs::{Pessoa, AppState, NovaPessoaDTO, PessoaDTO, Params, EMPTY_ARRAY_FLAG, AppQueue};
 
 #[post("/pessoas")]
-pub async fn create_pessoa(state: Data<AppState>, body: Json<NovaPessoaDTO>) -> impl Responder {
+pub async fn create_pessoa(body: Json<NovaPessoaDTO>, _state: Data<AppState>, queue: Data<Arc<AppQueue>>) -> impl Responder {
 	let apelido = match body.apelido.clone() {
 		Some(field) => field,
 		None => String::from("null")
@@ -91,22 +93,17 @@ pub async fn create_pessoa(state: Data<AppState>, body: Json<NovaPessoaDTO>) -> 
 
 	let generated_id: String = Uuid::new_v4().to_string();
 
-	match sqlx::query_as::<_, Pessoa>(
-		"INSERT INTO pessoa (id, apelido, nome, nascimento, stack) VALUES ($1, $2, $3, $4, $5)"
-	)
-		.bind(generated_id.clone())
-		.bind(apelido.to_string())
-		.bind(nome.to_string())
-		.bind(nascimento.to_string())
-		.bind(verified_stack)
-		.fetch_optional(&state.db)
-		.await
-	{
-		Ok(_) => HttpResponse::Created()
-			.insert_header(("Location", format!("/pessoas/{}", generated_id)))
-			.finish(),
-		Err(_) => HttpResponse::BadRequest().finish(),
-	}
+	queue.push(Pessoa {
+		id: generated_id.clone(),
+		apelido: apelido.clone(),
+		nome: nome.clone(),
+		nascimento: nascimento.clone(),
+		stack: verified_stack.clone()
+	});
+
+	HttpResponse::Created()
+		.insert_header(("Location", format!("/pessoas/{}", generated_id)))
+		.finish()
 }
 
 #[get("/pessoas")]
